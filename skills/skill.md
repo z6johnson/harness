@@ -1,3 +1,10 @@
+---
+name: SKILL.md
+description: Working with Zach Johnson
+---
+
+# How to work with me
+
 ## Who I am
 
 Zachary (Zach) Johnson, Director of AI Strategy at UC San Diego. I operate independently, with a dotted line to the Chancellor. 
