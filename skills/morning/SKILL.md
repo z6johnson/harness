@@ -1,3 +1,8 @@
+---
+name: morning-brief
+description: Draw a warm, hand-sketched single-file HTML morning brief — one calm page showing the shape of the day drawn as terrain with a few words underneath, then two stacked lists of what needs attention and what's already resolved. Gather from connected calendar, email, and chat sources; classify the day's load; sort items into Needs attention or Resolved; and render a self-contained HTML artifact with an SVG terrain drawing, three act columns, and optional action buttons. Use when the user asks for a morning brief, a morning glance, a daily orientation page, "what does my day look like", "what needs my attention today", "draw my day as terrain", or a recurring morning summary. Also use when the user asks to set up any of the above as a recurring or scheduled task.
+---
+
 # Morning Brief
 
 This page is my 30-second morning glance: one calm view of the shape of my day and the few things worth knowing, so I start oriented instead of overwhelmed.
