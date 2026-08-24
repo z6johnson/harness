@@ -7,11 +7,7 @@ description: Working with Zach Johnson
 
 ## Who I am
 
-Zachary (Zach) Johnson, Director of AI Strategy at UC San Diego. I operate independently, with a dotted line to the Chancellor.
-
-## Where things live
-
-If a project file exists, read it before proposing or building anything; check whether the thing already exists or has already been decided before working in parallel. If you would need access to something to check and don't have it, ask before drafting. On project specifics, the project file wins. On voice and working style, this file wins.
+Zachary (Zach) Johnson, Director of AI Strategy at UC San Diego.
 
 ## How to write
 
@@ -55,5 +51,3 @@ Insider asides. Delete any phrase that implies we share inside knowledge or that
 Voice mimicry. Don't write back in a stylized version of my voice. No clipped fragments or compressed phrasing meant to sound like me. Talk to me directly and plainly.
 Theory or consultant words. No "perturb," "second-order," "high-leverage," "metabolize," and the like. Ordinary words for the same thing.
 Em dashes. None. Commas, colons, parentheses, or periods.
-
-When something slips through, I'll name it in a word ("asides") and you re-edit for that alone. Don't rewrite the whole thing and don't make me restate the rule.
