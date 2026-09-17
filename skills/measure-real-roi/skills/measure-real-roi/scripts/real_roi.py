@@ -18,7 +18,7 @@ from extract_thread_metadata import (
 )
 
 
-SCHEMA_VERSION = "1.1"
+SCHEMA_VERSION = "1.2"
 PROHIBITED_FIELDS = {
     "name",
     "email",
@@ -372,7 +372,7 @@ def cmd_checkin(args: argparse.Namespace) -> None:
             examples=True,
         )
     else:
-        record["cleanup_minutes"] = 0
+        record["cleanup_minutes"] = None if wrong_output == "not sure" else 0
         reason = "cleanup time is unknown" if wrong_output == "not sure" else "no cleanup problem was reported"
         progress.skip(1, reason)
     confidence_label = prompt_choice(
@@ -389,7 +389,7 @@ def cmd_checkin(args: argparse.Namespace) -> None:
         progress.label("Did you get anything new done this week because of the Harness?")
     )
     new_capacity_description = ""
-    new_capacity_used_saved_time = False
+    new_capacity_used_saved_time: bool | None = False
     new_capacity_hours: float | None = 0
     if new_capacity is True:
         new_capacity_description = prompt_text(
@@ -404,6 +404,8 @@ def cmd_checkin(args: argparse.Namespace) -> None:
         )
         new_capacity_hours = None if new_capacity_duration is None else new_capacity_duration / 60
     else:
+        new_capacity_used_saved_time = None if new_capacity == "not sure" else False
+        new_capacity_hours = None if new_capacity == "not sure" else 0
         progress.skip(3, "no new work was reported")
 
     learning_duration = prompt_duration(
@@ -424,6 +426,7 @@ def cmd_checkin(args: argparse.Namespace) -> None:
             examples=True,
         )
     else:
+        model_change_redo_duration = None if model_changed == "not sure" else 0
         reason = "model-change redo time is unknown" if model_changed == "not sure" else "the model did not change"
         progress.skip(1, reason)
 

@@ -1,31 +1,53 @@
-# Real ROI Skill
+# Measure Real ROI Skill
 
-This repository packages the **Measure Real ROI** skill for local deployment in TritonAI Harness or Codex. It collects metadata-only AI-tool usage, asks one short weekly check-in, and prepares a pseudonymous submission for a restricted Google Form.
+This repository packages the **Measure Real ROI** skill for TritonAI Harness. The skill sets up local commands, collects metadata-only AI-tool usage, runs one short weekly check-in, and prepares a pseudonymous submission for a restricted Google Form.
 
 The skill measures the tool, not the person. It does not read or submit message content, attachments, file paths, raw session IDs, or thread titles.
 
-## Install
+## Distribution Options
 
-Clone this repository, then run the installer:
+### UCSD Community Skills
 
-```bash
-git clone https://github.com/OWNER/REPOSITORY.git
-cd REPOSITORY
-./install.sh
+Use this path for UCSD participants who should not work with Git repositories.
+
+1. Install the skill locally in TritonAI Harness.
+2. Use the Harness **Share with UCSD** action for `measure-real-roi`.
+3. After the community submission is approved, participants install it from the Harness community-skills interface.
+
+**Share with UCSD submits the skill folder for public community review.** It does not submit local pilot data, participant codes, records, secrets, or Google Form responses.
+
+### Skill Source URL
+
+If the Harness installer asks for a **Skill source URL**, use the URL for the skill folder, not the repository root:
+
+```text
+https://github.com/OWNER/REPOSITORY/tree/main/skills/measure-real-roi
 ```
 
-If you prefer not to use Git, choose **Code → Download ZIP** on GitHub, unzip the file, open the folder in Terminal, and run `./install.sh`.
+Replace `OWNER`, `REPOSITORY`, and `main` with the actual GitHub owner, repository, and branch.
 
-The installer:
+If the installer separately asks for a repository and path, use:
 
-1. validates the packaged skill with the Harness `skill-creator` validator
-2. installs the skill with the official Harness `skill-installer` when the repository has a GitHub origin
-3. falls back to a validated local copy for a ZIP download or unpublished checkout
-4. installs `checkin`, `roi-checkin`, `real-roi-setup`, and `roi-setup` under `~/.local/bin`
-5. adds that command directory to the shell path if needed
-6. runs a plain-language guided setup for the participant code, pilot dates, work types, and local secret
+```text
+Repository: OWNER/REPOSITORY
+Path: skills/measure-real-roi
+```
 
-When setup finishes, run:
+## First Run For Participants
+
+After installing the skill from Community Skills or a Skill source URL, participants should start a new Harness conversation and send:
+
+```text
+Use $measure-real-roi to enable Real ROI and set up my weekly check-in.
+```
+
+The skill runs `scripts/enable_real_roi.py`, which:
+
+1. installs `checkin`, `roi-checkin`, `real-roi-setup`, and `roi-setup`
+2. adds the command directory to the shell path when needed
+3. starts guided setup for the participant code, pilot dates, work types, and local secret
+
+If the participant is told to open a new terminal, they should do that and then run:
 
 ```bash
 checkin
@@ -37,15 +59,15 @@ To check in for another week:
 roi-checkin 2
 ```
 
-The skill becomes available in new Harness or Codex conversations. Existing conversations may need to be restarted.
+The check-in announces its maximum question count and estimated time, then shows `Next: Question X of Y` before each question. It does not accept blank answers; type `0` for none, `not sure` for unknown, or `recorded` to accept the measured weekly total.
 
-## Requirements
+## Maintainer Installation
 
-- Python 3.9 or newer
-- TritonAI Harness session logs, or a Codex session directory supplied through `REAL_ROI_SESSIONS_DIR`
-- macOS uses Keychain; Linux and other platforms use a user-only local secret file
+Maintainers can install directly from this checkout:
 
-## Update or uninstall
+```bash
+./install.sh --local
+```
 
 Update an existing installation without changing local pilot data:
 
@@ -53,32 +75,17 @@ Update an existing installation without changing local pilot data:
 ./install.sh --update
 ```
 
-Force a local-copy installation when testing an unpublished checkout:
-
-```bash
-./install.sh --local
-```
-
-Force installation through the official Harness skill-installer:
-
-```bash
-./install.sh --github
-```
-
-If you prefer to run the official skill-installer directly:
-
-```bash
-python3 "${CODEX_HOME:-~/.codex}/skills/.system/skill-installer/scripts/install-skill-from-github.py" \
-  --repo OWNER/REPOSITORY \
-  --path skills/measure-real-roi
-./install.sh --commands-only
-```
-
 Install the skill and commands now, but run guided setup later:
 
 ```bash
-./install.sh --no-setup
+./install.sh --local --no-setup
 real-roi-setup
+```
+
+Install only the local commands when the skill is already installed:
+
+```bash
+./install.sh --commands-only
 ```
 
 Remove the skill and commands while keeping local records:
@@ -93,29 +100,45 @@ Remove the skill, commands, and this pilot's local records:
 ./uninstall.sh --remove-data
 ```
 
-## First-time checklist
+## Requirements
+
+- Python 3.9 or newer
+- TritonAI Harness session logs, or a Codex session directory supplied through `REAL_ROI_SESSIONS_DIR`
+- macOS stores the pseudonymous thread secret in Keychain; other platforms use a user-only `.thread-secret` file
+
+## Governance Checklist
 
 - Assign a participant code that does not contain a name or email address.
 - Review `skills/measure-real-roi/assets/consent-template.md` with each participant.
-- Store the participant-code identity map separately from the analytical records.
+- Store the participant-code identity map separately from analytical records.
 - Confirm the retention date and restricted Google Form destination.
-- Do not use the records for performance review or workload decisions.
-- Run `checkin` once each week and confirm the summary before anything is saved.
+- Do not use records for performance review or workload decisions.
+- Run `checkin` weekly and confirm the summary before anything is saved.
 
-## What stays local
+## What Stays Local
 
 The submitted weekly aggregate contains only the participant code, week, work type, time estimates, baseline estimate, checking/cleanup/learning/coordination/redo time, new-capacity answer, confidence, and thread/turn counts. It does not contain a submitted thread reference.
 
-Thread references and metadata remain in the local pilot folder. On macOS, the pseudonymous thread secret is stored in Keychain. On other platforms, it is stored in a user-only `.thread-secret` file.
+Thread references and metadata remain in the local pilot folder. Local records, secrets, and submission summaries must not be committed to GitHub or shared through UCSD Community Skills.
 
-## Publish to GitHub
+## Publish To GitHub
 
-From the repository root:
+Commit exactly:
+
+```text
+.gitignore
+README.md
+install.sh
+uninstall.sh
+skills/measure-real-roi/
+```
+
+From this repository root:
 
 ```bash
-git init
 git add .
-git commit -m "Add Real ROI skill package"
+git commit -m "Add Measure Real ROI skill"
+git branch -M main
 gh repo create OWNER/REPOSITORY --private --source . --push
 ```
 

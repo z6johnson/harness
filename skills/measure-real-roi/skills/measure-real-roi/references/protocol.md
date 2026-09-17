@@ -33,6 +33,8 @@ The `select` command remains available for a legacy detailed check-in, but the n
 
 ## Weekly Check-In
 
+If the local `checkin` command is unavailable after a Community Skills or source-URL installation, run `scripts/enable_real_roi.py` first. It installs the local commands and starts guided setup.
+
 Run `checkin` on this machine. The command automatically extracts the current week, runs the aggregate check-in, and creates the submission summary.
 
 To run a different week, use `roi-checkin <week-number>`.

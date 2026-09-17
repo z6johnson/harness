@@ -1,4 +1,4 @@
 interface:
   display_name: "Measure Real ROI"
-  short_description: "Run local, pseudonymous AI ROI check-ins"
-  default_prompt: "Use $measure-real-roi to run my weekly Real ROI check-in."
+  short_description: "Set up and run local ROI check-ins"
+  default_prompt: "Use $measure-real-roi to set up and run my weekly Real ROI check-in."

@@ -163,8 +163,8 @@ fi
 
 chmod +x "$SKILL_DEST/scripts/real_roi.py" \
   "$SKILL_DEST/scripts/extract_thread_metadata.py" \
-  "$SKILL_DEST/scripts/setup_real_roi.py"
-mkdir -p "$BIN_DIR"
+  "$SKILL_DEST/scripts/setup_real_roi.py" \
+  "$SKILL_DEST/scripts/enable_real_roi.py"
 
 if [[ -d "$HOME/.tritonai-harness" ]]; then
   DEFAULT_CONFIG="$HOME/.tritonai-harness/real-roi/harness-real-roi-pilot/config.json"
@@ -172,103 +172,13 @@ else
   DEFAULT_CONFIG="$HOME/.real-roi/harness-real-roi-pilot/config.json"
 fi
 
-cat > "$BIN_DIR/roi-checkin" <<WRAPPER
-#!/usr/bin/env bash
-set -euo pipefail
-
-CONFIG="\${REAL_ROI_CONFIG:-$DEFAULT_CONFIG}"
-SKILL="$SKILL_DEST/scripts/real_roi.py"
-CODEX_HOME_DEFAULT="$CODEX_DEST"
-
-if [[ ! -f "\$CONFIG" ]]; then
-  echo "Real ROI is not configured yet." >&2
-  echo "Run \`real-roi-setup\` first." >&2
-  exit 1
-fi
-
-if [[ -n "\${1:-}" ]]; then
-  WEEK="\$1"
-else
-  WEEK=\$(python3 - "\$CONFIG" <<'PY'
-import json
-import sys
-from datetime import date
-
-with open(sys.argv[1], encoding="utf-8") as handle:
-    config = json.load(handle)
-start = date.fromisoformat(config["pilot_start_date"])
-end = date.fromisoformat(config["pilot_end_date"])
-today = date.today()
-if today < start:
-    print(1)
-elif today > end:
-    print(max(1, (end - start).days // 7 + 1))
-else:
-    print((today - start).days // 7 + 1)
-PY
-)
-fi
-
-CONFIG_DIR="\$(dirname "\$CONFIG")"
-if [[ -n "\${REAL_ROI_SESSIONS_DIR:-}" ]]; then
-  SESSIONS_DIR="\$REAL_ROI_SESSIONS_DIR"
-elif [[ -d "\$HOME/.tritonai-harness/codex/sessions" ]]; then
-  SESSIONS_DIR="\$HOME/.tritonai-harness/codex/sessions"
-else
-  SESSIONS_DIR="\$CODEX_HOME_DEFAULT/sessions"
-fi
-if [[ "\$(uname)" == "Darwin" ]]; then
-  SECRET_ARGS=(--keychain-service real-roi-thread-secret --keychain-account "\${USER:-\$(id -un)}")
-else
-  SECRET_ARGS=(--secret-file "\$CONFIG_DIR/.thread-secret")
-fi
-
-echo "Real ROI check-in: week \$WEEK"
-python3 "\$SKILL" extract --config "\$CONFIG" --week "\$WEEK" --sessions-dir "\$SESSIONS_DIR" "\${SECRET_ARGS[@]}"
-python3 "\$SKILL" checkin --config "\$CONFIG" --week "\$WEEK"
-python3 "\$SKILL" submission --config "\$CONFIG" --week "\$WEEK"
-WRAPPER
-
-cat > "$BIN_DIR/real-roi-setup" <<WRAPPER
-#!/usr/bin/env bash
-set -euo pipefail
-
-CONFIG="\${REAL_ROI_CONFIG:-$DEFAULT_CONFIG}"
-exec python3 "$SKILL_DEST/scripts/setup_real_roi.py" --config "\$CONFIG" "\$@"
-WRAPPER
-
-chmod +x "$BIN_DIR/roi-checkin" "$BIN_DIR/real-roi-setup"
-ln -sfn roi-checkin "$BIN_DIR/checkin"
-ln -sfn real-roi-setup "$BIN_DIR/roi-setup"
-
-case ":$PATH:" in
-  *":$BIN_DIR:"*) ;;
-  *)
-    echo
-    echo "$BIN_DIR is not currently in your PATH."
-    read -r -p "Add it to your shell startup file now? [Y/n] " add_path || true
-    add_path="${add_path:-Y}"
-    if [[ "$add_path" =~ ^[Yy]$ ]]; then
-      if [[ "$(uname)" == "Darwin" ]]; then
-        SHELL_RC="$HOME/.zshrc"
-      else
-        SHELL_RC="$HOME/.profile"
-      fi
-      printf '\n# Real ROI local commands\nexport PATH="%s:$PATH"\n' "$BIN_DIR" >> "$SHELL_RC"
-      echo "Added $BIN_DIR to $SHELL_RC."
-      echo "Open a new terminal, or run: export PATH=\"$BIN_DIR:\$PATH\""
-    else
-      echo "To use the short commands, add this line to your shell startup file:"
-      echo "export PATH=\"$BIN_DIR:\$PATH\""
-    fi
-    ;;
-esac
+python3 "$SKILL_DEST/scripts/enable_real_roi.py" \
+  --bin-dir "$BIN_DIR" \
+  --config "$DEFAULT_CONFIG" \
+  --commands-only
 
 echo
 echo "Installed Real ROI skill to $SKILL_DEST"
-echo "Installed commands to $BIN_DIR:"
-echo "  - real-roi-setup (or roi-setup)"
-echo "  - checkin (or roi-checkin)"
 
 if [[ "$RUN_SETUP" == true ]]; then
   echo

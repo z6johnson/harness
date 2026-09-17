@@ -1,6 +1,6 @@
 ---
 name: measure-real-roi
-description: Run local, pseudonymous Real ROI check-ins for AI tools. Use when the user asks to measure Real ROI, run a weekly AI ROI check-in, extract metadata-only Harness thread activity, prepare a pseudonymous Google Form submission, validate ROI records, or calculate institutional AI ROI.
+description: Set up and run local, pseudonymous Real ROI check-ins for AI tools. Use when the user asks to enable Real ROI, measure Real ROI, run a weekly AI ROI check-in, extract metadata-only Harness thread activity, prepare a pseudonymous Google Form submission, validate ROI records, or calculate institutional AI ROI.
 ---
 
 # Measure Real ROI
@@ -9,7 +9,7 @@ Use this skill to collect local AI-tool usage data, confirm one aggregate weekly
 
 ## Quick Start
 
-0. For first-time deployment from the packaged repository, run `./install.sh`. It installs the skill, adds the local commands, and runs guided setup. To install without setup, use `./install.sh --no-setup`.
+0. If the local `checkin` command is unavailable, run `python3 scripts/enable_real_roi.py`. It installs the local commands, adds them to the shell path, and runs guided setup. To enable commands without setup, add `--commands-only`.
 1. Read `references/governance.md` before setup or any question about consent, privacy, retention, or identity mapping.
 2. Read `references/protocol.md` before running a weekly check-in.
 3. Read `references/calculation.md` before computing or explaining ROI.
