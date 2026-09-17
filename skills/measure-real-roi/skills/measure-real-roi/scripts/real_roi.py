@@ -14,7 +14,7 @@ from pathlib import Path
 from extract_thread_metadata import (
     collect_intervals,
     derive_thread_metadata,
-    load_thread_secret,
+    load_hmac_key,
 )
 
 
@@ -232,19 +232,19 @@ def cmd_extract(args: argparse.Namespace) -> None:
         start_date = date.fromisoformat(args.start_date)
         end_date = date.fromisoformat(args.end_date)
     parser_args = argparse.Namespace(
-        secret=args.secret,
-        secret_file=args.secret_file,
+        hmac_key=args.secret,
+        hmac_key_file=args.secret_file,
         keychain_service=args.keychain_service,
         keychain_account=args.keychain_account,
     )
-    secret = load_thread_secret(parser_args)
+    hmac_key = load_hmac_key(parser_args)
     sessions, intervals = collect_intervals(
         Path(args.sessions_dir).expanduser(),
         start_date.isoformat(),
         end_date.isoformat(),
         str(config["timezone"]),
         int(config["gap_cutoff_minutes"]),
-        secret,
+        hmac_key,
     )
     metadata = derive_thread_metadata(
         sessions,

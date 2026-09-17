@@ -118,15 +118,15 @@ def shallow_json_values(line: str, wanted_paths: set[tuple[str, ...]]) -> dict[t
     return values
 
 
-def load_thread_secret(args: argparse.Namespace) -> bytes:
-    if args.secret:
-        return args.secret.encode("utf-8")
-    if args.secret_file:
-        path = Path(args.secret_file).expanduser()
+def load_hmac_key(args: argparse.Namespace) -> bytes:
+    if args.hmac_key:
+        return args.hmac_key.encode("utf-8")
+    if args.hmac_key_file:
+        path = Path(args.hmac_key_file).expanduser()
         return path.read_text(encoding="utf-8").strip().encode("utf-8")
-    env_secret = os.environ.get("REAL_ROI_THREAD_SECRET")
-    if env_secret:
-        return env_secret.encode("utf-8")
+    env_hmac_key = os.environ.get("REAL_ROI_THREAD_SECRET")
+    if env_hmac_key:
+        return env_hmac_key.encode("utf-8")
     if args.keychain_service:
         result = subprocess.run(
             ["security", "find-generic-password", "-a", args.keychain_account, "-s", args.keychain_service, "-w"],
@@ -138,8 +138,8 @@ def load_thread_secret(args: argparse.Namespace) -> bytes:
     raise ValueError("Provide --secret, --secret-file, REAL_ROI_THREAD_SECRET, or --keychain-service")
 
 
-def thread_ref(session_id: str, secret: bytes) -> str:
-    digest = hmac.new(secret, session_id.encode("utf-8"), hashlib.sha256).hexdigest()
+def thread_ref(session_id: str, hmac_key: bytes) -> str:
+    digest = hmac.new(hmac_key, session_id.encode("utf-8"), hashlib.sha256).hexdigest()
     return "thr-" + digest[:16]
 
 
@@ -190,7 +190,7 @@ def collect_intervals(
     end_date: str,
     timezone_name: str,
     gap_cutoff_minutes: int,
-    secret: bytes,
+    hmac_key: bytes,
 ) -> tuple[dict[str, dict[str, object]], dict[str, list[TurnInterval]]]:
     sessions: dict[str, dict[str, object]] = {}
     intervals_by_session: dict[str, list[TurnInterval]] = defaultdict(list)
@@ -212,7 +212,7 @@ def collect_intervals(
                 if not session_id:
                     continue
                 sessions[session_id] = {
-                    "thread_ref": thread_ref(session_id, secret),
+                    "thread_ref": thread_ref(session_id, hmac_key),
                     "source_file": file_path.name,
                     "created_at": values.get(("payload", "timestamp"), values.get(("timestamp", ""))),
                 }
@@ -235,7 +235,7 @@ def collect_intervals(
                     if timestamp > start:
                         intervals_by_session[session_id].append(
                             TurnInterval(
-                                thread_ref=thread_ref(session_id, secret),
+                                thread_ref=thread_ref(session_id, hmac_key),
                                 start=start,
                                 end=timestamp,
                                 turn_id=turn_id,
@@ -303,8 +303,8 @@ def main() -> None:
     parser.add_argument("--gap-cutoff-minutes", type=int, default=10)
     parser.add_argument("--timezone", default="America/Los_Angeles")
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--secret")
-    parser.add_argument("--secret-file")
+    parser.add_argument("--secret", dest="hmac_key")
+    parser.add_argument("--secret-file", dest="hmac_key_file")
     parser.add_argument("--keychain-service", default="real-roi-thread-secret")
     parser.add_argument("--keychain-account", default=os.environ.get("USER", ""))
     args = parser.parse_args()
@@ -312,14 +312,14 @@ def main() -> None:
     sessions_dir = Path(args.sessions_dir).expanduser()
     if not sessions_dir.exists():
         raise SystemExit(f"Sessions directory does not exist: {sessions_dir}")
-    secret = load_thread_secret(args)
+    hmac_key = load_hmac_key(args)
     sessions, intervals = collect_intervals(
         sessions_dir,
         args.start_date,
         args.end_date,
         args.timezone,
         args.gap_cutoff_minutes,
-        secret,
+        hmac_key,
     )
     metadata = derive_thread_metadata(sessions, intervals, args.timezone, args.gap_cutoff_minutes)
     result = {
