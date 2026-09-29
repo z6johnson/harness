@@ -1,0 +1,6 @@
+interface:
+  display_name: "Senate Chair Assistant"
+  short_description: "Intake, cases, board, and daily briefing"
+  default_prompt: "Use $senate-chair to process my new materials and show my board."
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Senate Chair Board</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --panel: #ffffff;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --accent: #00629b;
+    --gold: #c69214;
+    --red: #b91c1c;
+    --amber: #b45309;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  header { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  h1 { margin: 0; font-size: 22px; letter-spacing: -0.01em; }
+  h1 span { color: var(--gold); }
+  .generated { color: var(--muted); font-size: 13px; }
+  .board { display: grid; grid-template-columns: repeat(4, minmax(230px, 1fr)); gap: 16px; margin-top: 20px; align-items: start; }
+  @media (max-width: 1000px) { .board { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 580px) { .board { grid-template-columns: 1fr; } }
+  .column { background: #eceef1; border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+  .column h2 {
+    margin: 2px 2px 12px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--muted); display: flex; justify-content: space-between; align-items: center;
+  }
+  .count {
+    background: var(--accent); color: #fff; border-radius: 999px; font-size: 12px;
+    padding: 1px 8px; letter-spacing: 0;
+  }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+  }
+  .card-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .cid { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: var(--accent); }
+  .chip {
+    background: #e8f0f7; color: #274d68; border-radius: 999px; padding: 2px 8px;
+    font-size: 11px; white-space: nowrap;
+  }
+  .card h3 { margin: 0 0 8px; font-size: 14px; line-height: 1.35; }
+  .card dl { margin: 0; display: grid; gap: 4px; }
+  .card dt { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+  .card dd { margin: 0; font-size: 13px; }
+  .dl-red { color: var(--red); font-weight: 600; }
+  .dl-amber { color: var(--amber); font-weight: 600; }
+  .badges { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .badge { font-size: 11px; border-radius: 6px; padding: 2px 7px; }
+  .badge.review { background: #fef3c7; color: #92400e; }
+  .badge.confidential { background: #fee2e2; color: #991b1b; }
+  .badge.pending { background: #ede9fe; color: #5b21b6; }
+  .empty { color: var(--muted); font-size: 13px; border: 1px dashed var(--line); border-radius: 8px; padding: 14px; text-align: center; }
+  footer { margin-top: 18px; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Senate Chair <span>Board</span></h1>
+  <div class="generated">Generated {{GENERATED}}</div>
+</header>
+<main class="board">
+  <section class="column">
+    <h2>Received <span class="count">{{COUNT_RECEIVED}}</span></h2>
+    <!-- CARDS:RECEIVED -->
+  </section>
+  <section class="column">
+    <h2>Active <span class="count">{{COUNT_ACTIVE}}</span></h2>
+    <!-- CARDS:ACTIVE -->
+  </section>
+  <section class="column">
+    <h2>Pending <span class="count">{{COUNT_PENDING}}</span></h2>
+    <!-- CARDS:PENDING -->
+  </section>
+  <section class="column">
+    <h2>Resolved <span class="count">{{COUNT_RESOLVED}}</span></h2>
+    <!-- CARDS:RESOLVED -->
+  </section>
+</main>
+<footer>Local case store only — no external services. Regenerate with the senate-chair skill.</footer>
+</body>
+</html>
