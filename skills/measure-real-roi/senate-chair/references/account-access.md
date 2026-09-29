@@ -6,7 +6,10 @@ The skill may use the mail and calendar integration connected to the Chair's own
 
 - If the Chair uses Gmail: use the Gmail and Google Calendar skills.
 - If the Chair uses Outlook: use the Outlook mail and Outlook calendar skills.
-- Use whichever integration is actually connected; do not assume a platform.
+- Use the account selected during setup and recorded in `config.md` as `Linked account`.
+- If setup selected intake-folder-only, do not read mail or calendar.
+- Use only the integration that is actually connected; do not assume a platform.
+- Setup stores an account label and optional display address, never credentials or OAuth tokens.
 
 ## Mail
 

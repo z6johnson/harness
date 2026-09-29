@@ -6,6 +6,8 @@
 2. Files: list unprocessed files in `<root>/intake/` and process each. Leave originals in place.
 3. Pasted: treat pasted text as one item with source `pasted`.
 
+The selected account is recorded in `config.md` during setup. Use only that integration; when it is set to intake-folder-only, skip mail and calendar access entirely.
+
 ## Processing (every item)
 
 1. Summarize in 120 words or fewer.
@@ -55,4 +57,6 @@ Rules: `source.type` is `email`, `file`, or `pasted` (a `ref` is required for em
 ## Board and briefing
 
 - The board regenerates after every `process` and `triage`. To rebuild manually, run `board --root <root>`.
+- When creating or updating the board, use the `ucsd-branding` skill to apply the current UCSD Decorator 5 shell.
+- The interactive board supports inline case edits and drag-and-drop stage changes. Start it locally with `serve --root <root> --host 127.0.0.1 --port 8765`.
 - Briefing data comes from `brief --root <root>`: deadlines within 7 days (including overdue), Pending cases by days waiting, Active cases untouched for 5+ days, and items received since the last briefing. Synthesize it into 200 words or fewer with two or three suggested first actions.

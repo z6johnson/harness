@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import os
 import re
 import sys
 from datetime import date, timedelta
@@ -20,6 +21,12 @@ STATUSES = ["Received", "Active", "Pending", "Resolved"]
 PRIORITIES = ["Urgent", "High", "Normal", "Low"]
 CONFIDENCE_LEVELS = ["high", "medium", "low"]
 SOURCE_TYPES = ["email", "file", "pasted"]
+ACCOUNT_TYPES = ["gmail", "outlook", "none"]
+ACCOUNT_LABELS = {
+    "gmail": "Gmail",
+    "outlook": "Outlook",
+    "none": "Intake folder and pasted text",
+}
 BUILT_IN_TOPICS = [
     "Budget",
     "Faculty Affairs",
@@ -53,6 +60,37 @@ ITEM_ENTRY_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})-(\d{3}):\s*(.*)$")
 DATE_ONLY_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
+def root_pointer_path() -> Path:
+    return Path.home() / ".senate-chair" / "root"
+
+
+def read_root_pointer() -> Path | None:
+    pointer = root_pointer_path()
+    if not pointer.is_file():
+        return None
+    value = pointer.read_text(encoding="utf-8").strip()
+    return Path(value).expanduser().resolve() if value else None
+
+
+def write_root_pointer(root: Path) -> None:
+    pointer = root_pointer_path()
+    pointer.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    pointer.write_text(f"{root}\n", encoding="utf-8")
+    pointer.chmod(0o600)
+
+
+def resolve_root(value: str | None = None) -> Path:
+    if value:
+        return Path(value).expanduser().resolve()
+    environment_root = os.environ.get("SENATE_CHAIR_ROOT")
+    if environment_root:
+        return Path(environment_root).expanduser().resolve()
+    pointer_root = read_root_pointer()
+    if pointer_root:
+        return pointer_root
+    return Path.home() / "SenateChair"
+
+
 def fail(message: str) -> None:
     print(f"ERROR: {message}", file=sys.stderr)
     sys.exit(1)
@@ -83,6 +121,8 @@ def load_config(root: Path) -> dict:
     topics = list(BUILT_IN_TOPICS)
     last_mail_run = "none"
     last_briefing = "none"
+    linked_account = "not configured"
+    account_address = ""
     section = None
     for raw in text.splitlines():
         line = raw.strip()
@@ -97,7 +137,17 @@ def load_config(root: Path) -> dict:
             last_mail_run = line.split(":", 1)[1].strip()
         elif line.startswith("- Last briefing:"):
             last_briefing = line.split(":", 1)[1].strip()
-    return {"topics": topics, "last_mail_run": last_mail_run, "last_briefing": last_briefing}
+        elif line.startswith("- Linked account:"):
+            linked_account = line.split(":", 1)[1].strip()
+        elif line.startswith("- Account address:"):
+            account_address = line.split(":", 1)[1].strip()
+    return {
+        "topics": topics,
+        "last_mail_run": last_mail_run,
+        "last_briefing": last_briefing,
+        "linked_account": linked_account,
+        "account_address": account_address,
+    }
 
 
 def update_config(root: Path, key: str, value: str) -> None:
@@ -279,11 +329,12 @@ def next_deadline(case: dict) -> dict | None:
     return min(open_deadlines, key=lambda entry: entry["date"])
 
 
-def cmd_init(args: argparse.Namespace) -> None:
-    root = Path(args.root).expanduser()
+def create_data_root(root: Path, account: str, account_address: str) -> None:
     config = root / "config.md"
     if config.exists():
         fail(f"{config} already exists; refusing to overwrite an initialized data root.")
+    if root.exists() and not root.is_dir():
+        fail(f"Root path is not a directory: {root}")
     for folder in ("intake", "cases", "board", "briefings", "tmp"):
         (root / folder).mkdir(parents=True, exist_ok=True)
     config.write_text(
@@ -292,6 +343,8 @@ def cmd_init(args: argparse.Namespace) -> None:
                 "# Senate Chair Data Root",
                 "",
                 f"- Data root: {root}",
+                f"- Linked account: {ACCOUNT_LABELS[account]}",
+                f"- Account address: {account_address}",
                 "- Last mail run: none",
                 "- Last briefing: none",
                 "",
@@ -307,7 +360,58 @@ def cmd_init(args: argparse.Namespace) -> None:
         ),
         encoding="utf-8",
     )
+
+
+def cmd_init(args: argparse.Namespace) -> None:
+    root = Path(args.root).expanduser().resolve()
+    create_data_root(root, "none", "")
     emit({"root": str(root), "initialized": True})
+
+
+def cmd_setup(args: argparse.Namespace) -> None:
+    root_value = args.root
+    if not root_value and sys.stdin.isatty():
+        default_root = resolve_root()
+        root_value = input(f"Data root [{default_root}]: ").strip() or str(default_root)
+    root = Path(root_value or resolve_root()).expanduser().resolve()
+
+    account = args.account
+    if not account and sys.stdin.isatty():
+        print("Linked email account:")
+        print("  1. Gmail")
+        print("  2. Outlook")
+        print("  3. Intake folder and pasted text only")
+        choice = input("Choose 1-3 [3]: ").strip() or "3"
+        account = {"1": "gmail", "2": "outlook", "3": "none"}.get(choice)
+        if account is None:
+            fail("Choose 1, 2, or 3.")
+    if account not in ACCOUNT_TYPES:
+        fail("Provide --account gmail, outlook, or none.")
+
+    account_address = args.account_address
+    if account_address is None and account != "none" and sys.stdin.isatty():
+        account_address = input("Account address (optional, press Enter to skip): ").strip()
+    account_address = (account_address or "").strip() if account != "none" else ""
+
+    create_data_root(root, account, account_address)
+    if not args.no_remember:
+        write_root_pointer(root)
+    board_path = generate_board(root)
+    emit(
+        {
+            "root": str(root),
+            "initialized": True,
+            "linked_account": ACCOUNT_LABELS[account],
+            "account_address": account_address,
+            "board_path": str(board_path),
+            "remembered_root": not args.no_remember,
+            "harness_actions": {
+                "process": "Use $senate-chair to process my new materials.",
+                "board": "Use $senate-chair to view my board.",
+                "briefing": "Use $senate-chair to run my daily briefing.",
+            },
+        }
+    )
 
 
 def read_payload(path: str) -> dict:
@@ -324,7 +428,7 @@ def read_payload(path: str) -> dict:
 
 
 def cmd_process(args: argparse.Namespace) -> None:
-    root = Path(args.root).expanduser()
+    root = resolve_root(args.root)
     require_root(root)
     config = load_config(root)
     payload = read_payload(args.payload)
@@ -478,7 +582,7 @@ def cmd_process(args: argparse.Namespace) -> None:
 
 
 def cmd_triage(args: argparse.Namespace) -> None:
-    root = Path(args.root).expanduser()
+    root = resolve_root(args.root)
     require_root(root)
     case = find_case(root, args.case)
     today = date.today().isoformat()
@@ -546,7 +650,7 @@ def deadline_label(deadline: dict, today: date) -> tuple[str, str]:
         label = f"{deadline['date']} (today)"
     else:
         label = f"{deadline['date']} (in {days}d)"
-    css = "dl-red" if days <= 3 else "dl-amber" if days <= 7 else "dl-normal"
+    css = "deadline-urgent" if days <= 3 else "deadline-soon" if days <= 7 else "deadline-normal"
     return label, css
 
 
@@ -581,18 +685,20 @@ def render_card(case: dict, today: date) -> str:
         )
 
     return (
-        '<article class="card">'
-        '<div class="card-top">'
-        f'<span class="cid">{html.escape(case["id"])}</span>'
-        f'<span class="chip">{html.escape(case.get("Topic", "Other"))}</span>'
+        '<article class="panel panel-default case-card">'
+        '<div class="panel-heading">'
+        f'<h3 class="panel-title">{html.escape(case["id"])}</h3>'
         "</div>"
-        f"<h3>{html.escape(case['title'])}</h3>"
-        "<dl>"
-        f'<div><dt>Owner</dt><dd>{html.escape(case.get("Owner", "unassigned"))}</dd></div>'
-        f'<div><dt>Next deadline</dt><dd class="{deadline_css}">{html.escape(deadline_text)}</dd></div>'
-        f'<div><dt>Updated</dt><dd>{html.escape(updated_text)}</dd></div>'
+        '<div class="panel-body">'
+        f'<p class="case-topic"><span class="label label-default">{html.escape(case.get("Topic", "Other"))}</span></p>'
+        f'<h4 class="case-title">{html.escape(case["title"])}</h4>'
+        '<dl class="case-meta">'
+        f'<dt>Owner</dt><dd>{html.escape(case.get("Owner", "unassigned"))}</dd>'
+        f'<dt>Next deadline</dt><dd class="{deadline_css}">{html.escape(deadline_text)}</dd>'
+        f'<dt>Updated</dt><dd>{html.escape(updated_text)}</dd>'
         "</dl>"
-        + (f'<div class="badges">{"".join(badges)}</div>' if badges else "")
+        + (f'<div class="case-badges">{"".join(badges)}</div>' if badges else "")
+        + "</div>"
         + "</article>"
     )
 
@@ -607,36 +713,25 @@ def generate_board(root: Path) -> Path:
             fail(f"Case {case['id']} has an invalid status: {status!r}")
         columns[status].append(case)
 
-    template_path = Path(__file__).resolve().parent.parent / "assets" / "dashboard-template.html"
-    if not template_path.is_file():
-        fail(f"Dashboard template missing: {template_path}")
-    board_html = template_path.read_text(encoding="utf-8")
-    board_html = board_html.replace("{{GENERATED}}", today.isoformat())
-
-    for status in STATUSES:
-        column_cases = sorted(
-            columns[status],
-            key=lambda case: (
-                (next_deadline(case) or {"date": "9999-12-31"})["date"],
-                case.get("Last update") or "9999-12-31",
-            ),
-        )
-        if column_cases:
-            cards = "".join(render_card(case, today) for case in column_cases)
-        else:
-            cards = '<p class="empty">Nothing here.</p>'
-        board_html = board_html.replace(f"<!-- CARDS:{status.upper()} -->", cards)
-        board_html = board_html.replace(f"{{{{COUNT_{status.upper()}}}}}", str(len(column_cases)))
-
     board_dir = root / "board"
     board_dir.mkdir(parents=True, exist_ok=True)
+    assets_dir = Path(__file__).resolve().parent.parent / "assets"
+    asset_destinations = {
+        "dashboard-template.html": "index.html",
+        "dashboard.css": "dashboard.css",
+        "dashboard-app.js": "app.js",
+    }
+    for filename, destination_name in asset_destinations.items():
+        source = assets_dir / filename
+        if not source.is_file():
+            fail(f"Dashboard asset missing: {source}")
+        (board_dir / destination_name).write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
     board_path = board_dir / "index.html"
-    board_path.write_text(board_html, encoding="utf-8")
     return board_path
 
 
 def cmd_board(args: argparse.Namespace) -> None:
-    root = Path(args.root).expanduser()
+    root = resolve_root(args.root)
     require_root(root)
     board_path = generate_board(root)
     cases = load_all_cases(root)
@@ -648,7 +743,7 @@ def cmd_board(args: argparse.Namespace) -> None:
 
 
 def cmd_brief(args: argparse.Namespace) -> None:
-    root = Path(args.root).expanduser()
+    root = resolve_root(args.root)
     require_root(root)
     config = load_config(root)
     today = parse_iso_date(args.date, "briefing date") if args.date else date.today()
@@ -730,7 +825,7 @@ def cmd_brief(args: argparse.Namespace) -> None:
 
 
 def cmd_list(args: argparse.Namespace) -> None:
-    root = Path(args.root).expanduser()
+    root = resolve_root(args.root)
     require_root(root)
     cases = load_all_cases(root)
     if args.status:
@@ -757,13 +852,39 @@ def cmd_list(args: argparse.Namespace) -> None:
 
 
 def cmd_mark(args: argparse.Namespace) -> None:
-    root = Path(args.root).expanduser()
+    root = resolve_root(args.root)
     require_root(root)
     if not args.mail_run:
         fail("Provide --mail-run YYYY-MM-DD.")
     mail_run = parse_iso_date(args.mail_run, "mail run date")
     update_config(root, "Last mail run", mail_run.isoformat())
     emit({"last_mail_run": mail_run.isoformat()})
+
+
+def cmd_serve(args: argparse.Namespace) -> None:
+    root = resolve_root(args.root)
+    require_root(root)
+    from senate_chair_server import serve
+
+    serve(root, args.host, args.port)
+
+
+def cmd_status(args: argparse.Namespace) -> None:
+    root = resolve_root(args.root)
+    require_root(root)
+    config = load_config(root)
+    board_path = root / "board" / "index.html"
+    emit(
+        {
+            "root": str(root),
+            "linked_account": config["linked_account"],
+            "account_address": config["account_address"],
+            "last_mail_run": config["last_mail_run"],
+            "last_briefing": config["last_briefing"],
+            "board_path": str(board_path),
+            "board_exists": board_path.is_file(),
+        }
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -774,13 +895,27 @@ def build_parser() -> argparse.ArgumentParser:
     init_parser.add_argument("--root", default="~/SenateChair")
     init_parser.set_defaults(func=cmd_init)
 
+    setup_parser = subparsers.add_parser(
+        "setup",
+        help="initialize the data root, select the account link, and generate the board",
+    )
+    setup_parser.add_argument("--root")
+    setup_parser.add_argument("--account", choices=ACCOUNT_TYPES)
+    setup_parser.add_argument("--account-address")
+    setup_parser.add_argument(
+        "--no-remember",
+        action="store_true",
+        help="do not save this root as the default for later commands",
+    )
+    setup_parser.set_defaults(func=cmd_setup)
+
     process_parser = subparsers.add_parser("process", help="persist one processed item")
-    process_parser.add_argument("--root", required=True)
+    process_parser.add_argument("--root")
     process_parser.add_argument("--payload", required=True)
     process_parser.set_defaults(func=cmd_process)
 
     triage_parser = subparsers.add_parser("triage", help="apply Chair-confirmed case decisions")
-    triage_parser.add_argument("--root", required=True)
+    triage_parser.add_argument("--root")
     triage_parser.add_argument("--case", required=True)
     triage_parser.add_argument("--status", choices=STATUSES)
     triage_parser.add_argument("--owner")
@@ -790,24 +925,34 @@ def build_parser() -> argparse.ArgumentParser:
     triage_parser.set_defaults(func=cmd_triage)
 
     board_parser = subparsers.add_parser("board", help="regenerate the Kanban dashboard")
-    board_parser.add_argument("--root", required=True)
+    board_parser.add_argument("--root")
     board_parser.set_defaults(func=cmd_board)
 
     brief_parser = subparsers.add_parser("brief", help="print the daily briefing data skeleton")
-    brief_parser.add_argument("--root", required=True)
+    brief_parser.add_argument("--root")
     brief_parser.add_argument("--date")
     brief_parser.set_defaults(func=cmd_brief)
 
     list_parser = subparsers.add_parser("list", help="list cases")
-    list_parser.add_argument("--root", required=True)
+    list_parser.add_argument("--root")
     list_parser.add_argument("--status", choices=STATUSES)
     list_parser.add_argument("--topic")
     list_parser.set_defaults(func=cmd_list)
 
     mark_parser = subparsers.add_parser("mark", help="record the last processed mail date")
-    mark_parser.add_argument("--root", required=True)
+    mark_parser.add_argument("--root")
     mark_parser.add_argument("--mail-run")
     mark_parser.set_defaults(func=cmd_mark)
+
+    serve_parser = subparsers.add_parser("serve", help="serve the interactive local board")
+    serve_parser.add_argument("--root")
+    serve_parser.add_argument("--host", default="127.0.0.1")
+    serve_parser.add_argument("--port", type=int, default=8765)
+    serve_parser.set_defaults(func=cmd_serve)
+
+    status_parser = subparsers.add_parser("status", help="show the configured data root and account")
+    status_parser.add_argument("--root")
+    status_parser.set_defaults(func=cmd_status)
 
     return parser
 

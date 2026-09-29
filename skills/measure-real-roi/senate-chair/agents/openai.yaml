@@ -1,0 +1,7 @@
+interface:
+  display_name: "Senate Chair Assistant"
+  short_description: "Local intake, cases, board, and briefings"
+  brand_color: "#006A96"
+  default_prompt: "Use $senate-chair to initialize my data root and process new materials."
+policy:
+  allow_implicit_invocation: false

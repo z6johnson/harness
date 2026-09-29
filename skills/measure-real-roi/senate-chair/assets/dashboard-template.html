@@ -1,0 +1,92 @@
+<!doctype html>
+<html class="no-js" lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Senate Chair Board | UC San Diego</title>
+<meta name="DESCRIPTION" content="Interactive Senate Chair case board">
+
+<link href="https://cdn.ucsd.edu/cms/decorator-5/styles/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.ucsd.edu/cms/decorator-5/styles/base.min.css" rel="stylesheet">
+<link href="dashboard.css" rel="stylesheet">
+</head>
+<body>
+
+<header class="layout-header">
+  <a class="sr-only skip-to-main" href="#main-content">Skip to main content</a>
+  <div id="uc-emergency"></div>
+  <section aria-label="Site Name" class="layout-title">
+    <div class="layout-container container">
+      <a class="title-header title-header-large" href="#main-content">Senate Chair</a>
+      <a class="title-header title-header-short" href="#main-content">Chair</a>
+      <a class="title-logo" href="https://www.ucsd.edu">UC San Diego</a>
+    </div>
+  </section>
+</header>
+
+<nav class="navbar navbar-default navbar-static-top">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#board-navbar" aria-expanded="false" aria-controls="board-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand visible-xs-block" href="#main-content">Senate Chair</a>
+    </div>
+    <div id="board-navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li class="active"><a href="#main-content">Board</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<main class="layout-main" id="main-content" role="main">
+  <div class="container">
+    <div class="row">
+      <div class="col-xs-12">
+        <h1>Senate Chair Board</h1>
+        <p class="subhead">Drag a case between stages or edit its details inline.</p>
+        <div id="board-message" class="board-message" role="status" aria-live="polite"></div>
+        <div id="board-root" class="row board-columns" aria-live="polite"></div>
+        <noscript>
+          <p class="alert alert-warning">Enable JavaScript to use the interactive board.</p>
+        </noscript>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-8">
+        <p>
+          UC San Diego 9500 Gilman Dr. La Jolla, CA 92093 (858) 534-2230
+          <br>
+          Copyright © <span class="footer-copyright-year">2026</span> Regents of the University of California. All rights reserved.
+        </p>
+        <ul class="footer-links">
+          <li><a href="https://accessibility.ucsd.edu/">Accessibility</a></li>
+          <li><a href="https://ucsd.edu/about/privacy.html">Privacy</a></li>
+          <li><a href="https://ucsd.edu/about/terms-of-use.html">Terms of Use</a></li>
+        </ul>
+      </div>
+      <div class="col-sm-4">
+        <a href="https://ucsd.edu/"><img alt="UCSD homepage" class="img-responsive footer-logo" src="https://cdn.ucsd.edu/developer/decorator/5.0.2/img/ucsd-footer-logo-white.png"></a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.ucsd.edu/cms/decorator-5/scripts/jquery.min.js"></script>
+<script src="https://cdn.ucsd.edu/cms/decorator-5/scripts/bootstrap.min.js"></script>
+<script src="https://cdn.ucsd.edu/cms/decorator-5/scripts/vendor.min.js"></script>
+<script src="https://cdn.ucsd.edu/cms/decorator-5/scripts/base.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
